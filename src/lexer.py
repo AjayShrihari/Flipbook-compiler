@@ -49,12 +49,7 @@ def list_tokens(statements):
 
 
 
-# statements = '''
-#     IF quantity THEN
-#         total := total + price * quantity;
-#         tax := price * 0.05;
-#     ENDIF;
-# '''
+
 if __name__ == '__main__':
     statements = '''
     1 4 child.png offset 0 0;

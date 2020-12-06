@@ -1,7 +1,6 @@
 import copy
 import sys
-
-from . import lex
+import lex
 
 class ParseError(SyntaxError):
     def __init__(self, tokenizer, msg, info=None):
@@ -37,8 +36,7 @@ def merge_info_list(info):
     info.length = last.length + (last.textpos - first.textpos)
     return info
 
-# ParseResult works like a tuple for the results of parsed rules, but with an
-# additional .get_info(n...) method for getting line-number information out
+
 class ParseResult:
     def __init__(self, ctx, items, info):
         self._ctx = ctx
@@ -75,6 +73,10 @@ def unzip(results):
 
 # Parse either a token or a nonterminal of the grammar
 class Identifier:
+    '''
+    For parsing for grammar structure
+    Class for parsing either token or non terminal
+    '''
     def __init__(self, name):
         self.name = name
     def parse(self, ctx):
@@ -90,6 +92,9 @@ class Identifier:
 
 # Parse a rule repeated at least <min> number of times (used for * and + in EBNF)
 class Repeat:
+    '''
+    Parse a particular rule a repeated number of times
+    '''
     def __init__(self, item, min_reps=0):
         self.item = item
         self.min_reps = min_reps
@@ -107,8 +112,10 @@ class Repeat:
     def __str__(self):
         return 'rep(%s)' % self.item
 
-# Parse a sequence of multiple consecutive rules
 class Sequence:
+    '''
+    Parse a sequence, when there are multiple rules for the given expression/command 
+    '''
     def __init__(self, items):
         self.items = items
     def parse(self, ctx):
@@ -124,8 +131,11 @@ class Sequence:
     def __str__(self):
         return 'seq(%s)' % ','.join(map(str, self.items))
 
-# Parse one of a choice of multiple rules
+
 class Alternation:
+    '''
+    Parse an alternate rule
+    '''
     def __init__(self, items):
         self.items = items
     def parse(self, ctx):
@@ -137,8 +147,11 @@ class Alternation:
     def __str__(self):
         return 'alt(%s)' % ','.join(map(str, self.items))
 
-# Either parse a rule or not
+
 class Optional:
+    '''
+    Parse an optional rule in the rule table
+    '''
     def __init__(self, item):
         self.item = item
     def parse(self, ctx):
@@ -146,12 +159,12 @@ class Optional:
     def __str__(self):
         return 'opt(%s)' % self.item
 
-# Parse a rule and then call a user-defined function on the result
+
 class FnWrapper:
     def __init__(self, rule, fn):
-        # Make sure top-level rules are a sequence. When we pass parse results
-        # to the user-defined function, it must be returned in an array, so we
-        # can use the ParseResult class and have access to the parse info
+        '''
+        Parse rule, and based on rule table, call a user defined function
+        '''
         if not isinstance(rule, Sequence):
             rule = Sequence([rule])
         self.rule = rule
@@ -170,11 +183,12 @@ class FnWrapper:
     def __str__(self):
         return str(self.rule)
 
-# Mini parser for our grammar specification language (basically EBNF)
 
-# After either a parenthesized group or an identifier, we accept * and + for
-# repeating the aforementioned item (either zero or more times, or one or more)
 def parse_repeat(tokenizer, repeated):
+    '''
+    Parser for EBNF language
+    For repeating operations, like * and + 
+    '''
     if tokenizer.accept('STAR'):
         return Repeat(repeated)
     elif tokenizer.accept('PLUS'):
@@ -182,38 +196,44 @@ def parse_repeat(tokenizer, repeated):
     return repeated
 
 def parse_rule_atom(tokenizer):
-    # Parenthesized rules: just used for grouping
+    '''
+    Rules for paranthesis
+    '''
     if tokenizer.accept('LPAREN'):
         result = parse_rule_expr(tokenizer)
         tokenizer.expect('RPAREN')
         result = parse_repeat(tokenizer, result)
-    # Bracketed rules are entirely optional
+    
     elif tokenizer.accept('LBRACKET'):
         result = Optional(parse_rule_expr(tokenizer))
         tokenizer.expect('RBRACKET')
-    # Otherwise, it must be a regular identifier
+    
     else:
         token = tokenizer.expect('IDENTIFIER')
         result = parse_repeat(tokenizer, Identifier(token.value))
     return result
 
-# Parse the concatenation of one or more expressions
+
 def parse_rule_seq(tokenizer):
+    '''
+    Parse a sequence using rules given specifically for sequences
+    '''
     items = []
     token = tokenizer.peek()
     while (token and token.type != 'RBRACKET' and token.type != 'RPAREN' and
             token.type != 'PIPE'):
         items.append(parse_rule_atom(tokenizer))
         token = tokenizer.peek()
-    # Only return a sequence if there's multiple items, otherwise there's way
-    # too many [0]s when extracting parsed items in complicated rules
+    
     if len(items) > 1:
         return Sequence(items)
     return items[0] if items else None
 
-# Top-level parser, parse any number of sequences, joined by the alternation
-# operator, |
+
 def parse_rule_expr(tokenizer):
+    '''
+    For Piping operation: alternation in the expression
+    '''
     items = [parse_rule_seq(tokenizer)]
     while tokenizer.accept('PIPE'):
         items.append(parse_rule_seq(tokenizer))
@@ -221,7 +241,7 @@ def parse_rule_expr(tokenizer):
         return Alternation(items)
     return items[0]
 
-# ...And a mini lexer too
+
 
 rule_tokens = {
     'IDENTIFIER': r'[a-zA-Z_]+',
@@ -236,17 +256,20 @@ rule_tokens = {
 }
 rule_lexer = lex.Lexer(rule_tokens)
 
-# Decorator to add a function to a table of rules. We can't use lambda for
-# multi-statement functions, and thus we can't have all the functions directly inside a
-# list, but this at least allows us to have the rule right by the function definition,
-# without resorting to weird things like PLY's docstring handling
+
 def rule_fn(rule_table, name, rule):
+    '''
+    Use the function wrapper instead of PLY package for functions that we define explicitly
+    '''
     def wrapper(fn):
         rule_table.append((name, (rule, fn)))
         return fn
     return wrapper
 
 class Parser:
+    '''
+    Add user given rules to rule table 
+    '''
     def __init__(self, rule_table, start):
         self.rule_table = {}
         for [name, *rules] in rule_table:
@@ -255,28 +278,22 @@ class Parser:
                 if isinstance(rule, tuple):
                     rule, fn = rule
                 self.create_rule(name, rule, fn)
-        # Finalize rules: any time we see a alternation with just one rule, simplify it
-        # to just the one rule. We keep every top-level rules inside alternations in case
-        # it gets repeated, so we take that out where it's not necessary now.
+        
         for name, rule in self.rule_table.items():
             if isinstance(rule, Alternation) and len(rule.items) == 1:
                 self.rule_table[name] = rule.items[0]
         self.start = start
 
     def create_rule(self, name, rule, fn):
-        # Parse the EBNF grammar specification for this rule
+        '''
+        Parse table and create rules based on the programmer requirement
+        '''
         rule = parse_rule_expr(rule_lexer.input(rule))
 
-        # Wrap the rule in an FnWrapper class if the user has provided a handling function
+        
         rule = FnWrapper(rule, fn) if fn else rule
 
-        # Add the rule to our rule table. We store all top-level rules inside alternations, so
-        # that adding two different rules for the same name is the same as adding them both inside
-        # an alternation. For example, this:
-        #   name: rule_1
-        #   name: rule_2
-        # ...is equivalent to:
-        #   name: rule_1 | rule_2
+       
         if name not in self.rule_table:
             self.rule_table[name] = Alternation([])
         self.rule_table[name].items.append(rule)
@@ -287,14 +304,14 @@ class Parser:
         try:
             result = rule.parse(ctx)
         except lex.LexError as e:
-            # Kinda hacky, wrap LexErrors in ParseErrors since we don't have access to the
-            # LexerContext where they are created
+            '''
+            Error handling
+            '''
             raise ParseError(tokenizer, e.msg, e.info)
 
         fail = (not result or tokenizer.peek() is not None)
 
-        # If we're in lazy mode, check if we didn't parse a full element but could have. If
-        # there was a parse error, we will have given up before reaching the end of the token stream.
+        
         if lazy and fail and tokenizer.got_to_end():
             return None
 
