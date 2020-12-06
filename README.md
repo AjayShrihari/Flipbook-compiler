@@ -14,7 +14,7 @@ The Parser translates the BNF-like grammar syntax and inputs it to a top-down re
 git clone https://github.com/AjayShrihari/Flipbook-compiler.git
 conda create --name flipbook --file spec-file.txt
 conda activate flipbook
-pip install -r requirements.txt
+pip install fpdf
 python src/compiler.py
 ```
 The input ``` input/input.flip ``` which contains the commands that are inputted into the flipbook. 
