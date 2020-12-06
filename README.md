@@ -2,6 +2,7 @@
 A programming language and compiler for displaying a flipbook
 ## Explanation
 Link to video demonstrations: https://drive.google.com/drive/folders/1921cKpZwtQqal1jVk_JJCBdCA8dozIMR?usp=sharing
+
 A context free grammar (CFG) is a formal grammar which has the four following components: alphabet, a set of productions, a start symbol and a set of variables. Using the principles defined in our CFG, we can design a compiler that parses certain inputs based on the rules given in the CFG and calls certain routines to perform certain tasks in the code that is inputted to the compiler.
 
 
