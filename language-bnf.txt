@@ -1,0 +1,28 @@
+
+x, y = 0, 0
+
+
+for i = start:end
+
+{
+    x=x+y  
+    x=x-y
+    if (y>100)
+    {
+        y = y + y
+    }
+    
+    insert_image x y 
+    new_page
+}
+program:=statement*
+statement:=for | if | expr | insert | new_page
+insert:= "insert_image" ID ID
+new_page:= "new_page"
+expr:= expr + ID | expr - ID | ID | NUMBER
+for:= "for" ID = ID: ID { statement } 
+if:= "if" (ID cond_op ID) { statement}
+cond_op:= ">"|"<"|"=="
+
+
+assign:= ID, ID = NUMBER, NUMBER

@@ -8,6 +8,7 @@ class Token(NamedTuple):
     column: int
 
 def tokenize(code):
+    
     keywords = {'IF', 'THEN', 'ENDIF', 'FOR', 'NEXT', 'GOSUB', 'RETURN'}
     token_specification = [
         ('NUMBER',   r'\d+(\.\d*)?'),  # Integer or decimal number
@@ -40,15 +41,29 @@ def tokenize(code):
             raise RuntimeError(f'{value!r} unexpected on line {line_num}')
         yield Token(kind, value, line_num, column)
 
+def list_tokens(statements):
+    list_token = []
+    for token in tokenize(statements):
+        list_token.append(token)
+    return list_token
+
+
+
 # statements = '''
 #     IF quantity THEN
 #         total := total + price * quantity;
 #         tax := price * 0.05;
 #     ENDIF;
 # '''
-statements = '''
-1 4 child.png offset 0 0;
-5 8 adult.png offset 100 100;
-'''
-for token in tokenize(statements):
-    print(token)
+if __name__ == '__main__':
+    statements = '''
+    1 4 child.png offset 0 0;
+    5 8 adult.png offset 100 100;
+    '''
+    # for token in tokenize(statements):
+    #     print(token)
+    list_token = list_tokens(statements)
+    print (list_token)
+    # print (list_token[0].value)
+    # print (list_token[1])
+    # print (list_token[2])

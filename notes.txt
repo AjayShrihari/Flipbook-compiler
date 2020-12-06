@@ -1,0 +1,10 @@
+CFG - 4 things: alphabet, set of productions, start symbol, set of variables
+
+for ():
+
+ statements
+
+ for:= (Init, Cond, Update){statements}
+
+ statements:= for 
+ statements:= statement statements  
