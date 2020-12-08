@@ -6,7 +6,7 @@ Link to video demonstrations: https://drive.google.com/drive/folders/1921cKpZwtQ
 A context free grammar (CFG) is a formal grammar which has the four following components: alphabet, a set of productions, a start symbol and a set of variables. Using the principles defined in our CFG, we can design a compiler that parses certain inputs based on the rules given in the CFG and calls certain routines to perform certain tasks in the code that is inputted to the compiler.
 
 
-Here, the lexer is built with a lust of regex expressions, and a rule table is defined to allow the programmer to define the allowed types of input. The lexer outputs a list of tokens based on the requirements we define explicitly.
+Here, the lexer is built with a list of regex expressions, and a rule table is defined to allow the programmer to define the allowed types of input. The lexer outputs a list of tokens based on the requirements we define explicitly.
 
 The Parser translates the BNF-like grammar syntax and inputs it to a top-down recursive descent parser, which builds a parse tree from top-to down, assuming the tree starts with the non-terminal.
 
